@@ -5,8 +5,9 @@
         <br><br>
         <form action="#" method="POST" enctype="multipart/form-data">
             <div class="input-group">
-                <input type="file" class="form-control" name="image_name" required>
-                <input type="submit" value="Upload" class="btn btn-outline-secondary">
+                <label for="formFile" class="form-label w-100">Chọn file ảnh muốn nhận diện</label>
+                <input type="file" class="form-control" name="image_name" required id="formFile">
+                <input type="submit" value="Tải lên" class="btn btn-outline-secondary">
             </div>
         </form>
     </div>
@@ -20,7 +21,7 @@
                         <img class="rounded float-left img-fluid" src="/static/upload/{{ upload_image }}" alt="">
                     </td>
                     <td>
-                        <img class="rounded float-right img-fluid" src="/static/predict/{{ upload_image }}" alt="">
+                        <img class="rounded float-right img-fluid" src="/static/detect_license_yolo/predict/{{ upload_image }}" alt="">
                     </td>
                 </tr>
 
@@ -28,23 +29,23 @@
             <br>
             <table style="border: solid black; width: 100%;">
                 <tr style="border: solid black;">
-                    <th>Number of Licence Plate Detected = {{no}}</th>
+                    <th>Tổng biển số xe xác định được = {{ no }}</th>
                 </tr>
-                
-                    {% for lic in text %}
+
+                {% for lic in text %}
                     <tr style="border: solid black;">
-                    <td style="background-color: greenyellow;">
-                        <p class="display-8"> {{ lic }}</p>
-                    </td>
+                        <td style="background-color: greenyellow;">
+                            <p class="display-8"> {{ lic }}</p>
+                        </td>
                     </tr>
-                    {% endfor %}
-                
+                {% endfor %}
+
             </table>
 
         </div>
-    
-    
-    
+
+
+
     {% endif %}
 
-{% endblock  %}
+{% endblock %}

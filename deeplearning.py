@@ -1,22 +1,19 @@
 import os
-import sys
-
 import numpy as np
 import cv2
-
 
 # LOAD YOLO MODEL
 from static.extract_text_cnn.lp_recognition import E2E
 
 INPUT_WIDTH = 640
 INPUT_HEIGHT = 640
-net = cv2.dnn.readNetFromONNX('./static/models/best.onnx')
+net = cv2.dnn.readNetFromONNX('./static/detect_license_yolo/best.onnx')
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
 
 def get_detections(img, net):
-    # CONVERT IMAGE TO YOLO FORMAT
+    # CONVERT IMAGE TO YOLO FORMAT (SQUARE IMAGE)
     image = img.copy()
     row, col, d = image.shape
 
@@ -73,14 +70,48 @@ def extract_text(image, bbox):
     x, y, w, h = bbox
 
     roi = image[y:y + h, x:x + w]
+    # roi = rotate_and_crop(roi)
     if 0 in roi.shape:
         return ''
     else:
         model = E2E()
         text = model.predict(roi)
-
         return text
 
+
+def rotate_and_crop(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    max_area = 0
+    max_cnt = None
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area > max_area:
+            max_area = area
+            max_cnt = cnt
+    x, y, w, h = cv2.boundingRect(max_cnt)
+
+    rect = cv2.minAreaRect(max_cnt)
+    ((cx, cy), (cw, ch), angle) = rect
+
+    M = cv2.getRotationMatrix2D((cx, cy), angle - 90, 1)
+    rotated = cv2.warpAffine(img, M, (img.shape[1], img.shape[0]))
+
+    gray = cv2.cvtColor(rotated, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    max_area = 0
+    max_cnt = None
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area > max_area:
+            max_area = area
+            max_cnt = cnt
+    x, y, w, h = cv2.boundingRect(max_cnt)
+    cropped = rotated[y:y + h, x:x + w]
+    return cropped
 
 def drawings(image, boxes_np, confidences_np, index):
     # drawings
@@ -119,30 +150,5 @@ def object_detection(path, filename):
     image = cv2.imread(path)  # PIL object
     image = np.array(image, dtype=np.uint8)  # 8 bit array (0,255)
     result_img, text_list = yolo_predictions(image, net)
-    cv2.imwrite(os.path.join('./static/predict/{}').format(filename), result_img)
+    cv2.imwrite(os.path.join('static/detect_license_yolo/predict/{}').format(filename), result_img)
     return text_list
-
-
-def apply_brightness_contrast(input_img, brightness=0, contrast=0):
-    if brightness != 0:
-        if brightness > 0:
-            shadow = brightness
-            highlight = 255
-        else:
-            shadow = 0
-            highlight = 255 + brightness
-        alpha_b = (highlight - shadow) / 255
-        gamma_b = shadow
-
-        buf = cv2.addWeighted(input_img, alpha_b, input_img, 0, gamma_b)
-    else:
-        buf = input_img.copy()
-
-    if contrast != 0:
-        f = 131 * (contrast + 127) / (127 * (131 - contrast))
-        alpha_c = f
-        gamma_c = 127 * (1 - f)
-
-        buf = cv2.addWeighted(buf, alpha_c, buf, 0, gamma_c)
-
-    return buf

@@ -1,5 +1,3 @@
-import sys
-
 from flask import Flask, render_template, request
 import os 
 from deeplearning import object_detection
@@ -7,7 +5,6 @@ from deeplearning import object_detection
 app = Flask(__name__)
 
 UPLOAD_PATH = ('static/upload/')
-
 
 @app.route('/',methods=['POST','GET'])
 def index():

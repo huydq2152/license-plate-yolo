@@ -1,6 +1,3 @@
-import os
-import sys
-
 import cv2
 import numpy as np
 from skimage import measure
@@ -44,7 +41,7 @@ class E2E(object):
         V = cv2.split(cv2.cvtColor(LpRegion, cv2.COLOR_BGR2HSV))[2]
 
         # adaptive threshold
-        T = threshold_local(V, 15, offset=10, method="gaussian")
+        T = threshold_local(V, 35, offset=5, method="gaussian")
         thresh = (V > T).astype("uint8") * 255
 
         # convert black pixel of digits to white pixel
@@ -53,7 +50,8 @@ class E2E(object):
         thresh = cv2.medianBlur(thresh, 5)
 
         # connected components analysis
-        labels = measure.label(thresh, connectivity=2, background=0)
+        # labels = measure.label(thresh, connectivity=2, background=0)
+        _, labels = cv2.connectedComponents(thresh)
 
         # loop over the unique components
         for label in np.unique(labels):
